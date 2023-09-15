@@ -48,8 +48,6 @@ def main():
                     "Authorization": dwmn_token
                 }
                 logger.info('bot started')
-                a = 1/0
-                print(a)
                 try:
                     params = {'timestamp': last_timestamp}
                     response = requests.get(url, headers=headers, params=params)
