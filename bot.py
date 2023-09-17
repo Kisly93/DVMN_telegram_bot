@@ -11,7 +11,17 @@ from dotenv import load_dotenv
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+log_file_handler = logging.FileHandler(f"{__name__}.log", mode='a')
 log_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s')
+
+log_file_handler.setFormatter(log_formatter)
+logger.addHandler(log_file_handler)
+
+
+def log_to_chat_and_file(message, chat_id, bot):
+    bot.send_message(chat_id=chat_id, text=message)
+    logger.info(message)
+
 
 def send_telegram_notification(lesson_title, is_negative, lesson_url, chat_id, bot):
     if not is_negative:
@@ -25,9 +35,6 @@ def send_telegram_notification(lesson_title, is_negative, lesson_url, chat_id, b
                     """)
     bot.send_message(chat_id=chat_id, text=message)
 
-def log_to_chat_and_file(message, chat_id, bot):
-    bot.send_message(chat_id=chat_id, text=message)
-    logger.info(message)
 
 def main():
     while True:
@@ -37,17 +44,14 @@ def main():
             telegram_token = os.getenv('TOKEN_TELEGRAM')
             dwmn_token = os.getenv('DWMN_TOKEN')
             bot = telegram.Bot(token=telegram_token)
-
-            log_message = "Бот запущен."
+            log_message = "Бот запущен"
             log_to_chat_and_file(log_message, chat_id, bot)
-
             last_timestamp = None
             while True:
                 url = 'https://dvmn.org/api/long_polling/'
                 headers = {
                     "Authorization": dwmn_token
                 }
-                logger.info('bot started')
                 try:
                     params = {'timestamp': last_timestamp}
                     response = requests.get(url, headers=headers, params=params)
@@ -68,14 +72,13 @@ def main():
                 except requests.exceptions.Timeout:
                     pass
                 except requests.exceptions.ConnectionError:
-                    print("Интернет соединение отсутствует. Повторная попытка через 20 секунд...")
+                    error_message = "Интернет соединение отсутствует. Повторная попытка через 20 секунд..."
+                    log_to_chat_and_file(error_message, chat_id, bot)
                     time.sleep(20)
         except Exception as e:
-            chat_id = os.getenv('CHAT_ID_TG')
-            telegram_token = os.getenv('TOKEN_TELEGRAM')
-            bot = telegram.Bot(token=telegram_token)
             error_message = f"Бот упал с ошибкой: {str(e)}\n\n{traceback.format_exc()}"
             log_to_chat_and_file(error_message, chat_id, bot)
+
 
 if __name__ == '__main__':
     main()
