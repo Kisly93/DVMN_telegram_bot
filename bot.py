@@ -11,16 +11,12 @@ from dotenv import load_dotenv
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-log_file_handler = logging.FileHandler(f"{__name__}.log", mode='a')
 log_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s')
 
+log_file_handler = logging.FileHandler(f"{__name__}.log", mode='a')
 log_file_handler.setFormatter(log_formatter)
+
 logger.addHandler(log_file_handler)
-
-
-def log_to_chat_and_file(message, chat_id, bot):
-    bot.send_message(chat_id=chat_id, text=message)
-    logger.info(message)
 
 
 def send_telegram_notification(lesson_title, is_negative, lesson_url, chat_id, bot):
@@ -34,6 +30,11 @@ def send_telegram_notification(lesson_title, is_negative, lesson_url, chat_id, b
             Ссылка на урок: {lesson_url}
                     """)
     bot.send_message(chat_id=chat_id, text=message)
+
+
+def log_to_chat_and_file(message, chat_id, bot):
+    bot.send_message(chat_id=chat_id, text=message)
+    logger.info(message)
 
 
 def main():
@@ -56,13 +57,13 @@ def main():
                     params = {'timestamp': last_timestamp}
                     response = requests.get(url, headers=headers, params=params)
                     response.raise_for_status()
-                    dvmn_api_data = response.json()
+                    lesson_reviews = response.json()
 
-                    if dvmn_api_data['status'] == 'timeout':
-                        last_timestamp = dvmn_api_data['timestamp_to_request']
+                    if lesson_reviews['status'] == 'timeout':
+                        last_timestamp = lesson_reviews['timestamp_to_request']
                     else:
-                        last_timestamp = dvmn_api_data['last_attempt_timestamp']
-                        new_attempts = dvmn_api_data['new_attempts']
+                        last_timestamp = lesson_reviews['last_attempt_timestamp']
+                        new_attempts = lesson_reviews['new_attempts']
                         for new_attempt in new_attempts:
                             lesson_title = new_attempt['lesson_title']
                             is_negative = new_attempt['is_negative']
