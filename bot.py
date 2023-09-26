@@ -45,32 +45,29 @@ def main():
     while True:
         try:
             url = 'https://dvmn.org/api/long_polling/'
-            headers = {
-                "Authorization": dwmn_token
-            }
-            try:
-                params = {'timestamp': last_timestamp}
-                response = requests.get(url, headers=headers, params=params)
-                response.raise_for_status()
-                lesson_reviews = response.json()
+            headers = {"Authorization": dwmn_token}
+            params = {'timestamp': last_timestamp}
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            lesson_reviews = response.json()
 
-                if lesson_reviews['status'] == 'timeout':
-                    last_timestamp = lesson_reviews['timestamp_to_request']
-                else:
-                    last_timestamp = lesson_reviews['last_attempt_timestamp']
-                    new_attempts = lesson_reviews['new_attempts']
-                    for new_attempt in new_attempts:
-                        lesson_title = new_attempt['lesson_title']
-                        is_negative = new_attempt['is_negative']
-                        lesson_url = new_attempt['lesson_url']
-                        send_telegram_notification(lesson_title, is_negative, lesson_url, chat_id, bot)
+            if lesson_reviews['status'] == 'timeout':
+                last_timestamp = lesson_reviews['timestamp_to_request']
+            else:
+                last_timestamp = lesson_reviews['last_attempt_timestamp']
+                new_attempts = lesson_reviews['new_attempts']
+                for new_attempt in new_attempts:
+                    lesson_title = new_attempt['lesson_title']
+                    is_negative = new_attempt['is_negative']
+                    lesson_url = new_attempt['lesson_url']
+                    send_telegram_notification(lesson_title, is_negative, lesson_url, chat_id, bot)
 
-            except requests.exceptions.Timeout:
-                pass
-            except requests.exceptions.ConnectionError:
-                error_message = "Интернет соединение отсутствует. Повторная попытка через 20 секунд..."
-                bot.logger.warning(error_message)
-                time.sleep(20)
+        except requests.exceptions.Timeout:
+            pass
+        except requests.exceptions.ConnectionError:
+            error_message = "Интернет соединение отсутствует. Повторная попытка через 20 секунд..."
+            bot.logger.warning(error_message)
+            time.sleep(20)
         except Exception as e:
             error_message = f"Бот упал с ошибкой: {str(e)}\n\n{traceback.format_exc()}"
             bot.logger.warning(error_message)
